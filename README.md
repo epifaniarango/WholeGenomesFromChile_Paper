@@ -17,7 +17,7 @@ vcftools --gzvcf ModernData.vcf.gz --plink --out ModernData
 ```
 Here I also keept only biallelic sites.
 
-# Before plotting
+### Before plotting
 We also wanted to crosscheck the call overlap between the SNPChip and the WG sequencing.HO refers to Human Origins (the SNPCHip platform).
 Check the R code Comparison.R for more detail.
 

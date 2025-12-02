@@ -1,64 +1,62 @@
-# Average nucleotide diversity within populations
-This script was not created by me, but by Roman Briskine
-This pipeline calculates average nucleotide diversity for the populations in the South American
-expression data set using [pixy](https://pixy.readthedocs.io/en/latest/). The pipeline contains the
-following steps.
+# Scripts for making Figure 2 and related figures
 
-- Index the input files
-- Download data for VQSR
-- Call haplotypes for each sample individually
-- Genotype all samples jointly
-- Perform VQSR
-- Apply additional filters (depth, HWE, missingness, MAF)
-- Compute nucleotide diversity for sliding windows
-- Aggregate the values from all windows
+## Pi and Tajima's D calculation
 
-
-## Input data
-
-- Sequencing data in bam format should be placed into `data/bams`. Index files should also be
-  provided. File names should start with the sample name. Sample name is assumed to consist of all
-  characters up to the first underscore `_`. Dashes in sample names are allowed.
-- Corresponding genome reference `hs37d5.fa.gz` should be placed in `data/ref`
-- List of samples should be provided in `data/share/samples.txt`. It should contain a single column
-  with sample names. There should be no header line. The pipeline will only process samples specified
-  in this file.
-- Population mappings should be provided in `data/share/populations.txt`. The file should have no
-  headers and provide two columns: sample name and population name.
-- Depending on the sequencing depth, different maximum depth thresholds are applied to different
-  samples. The threshold is indicated by adding each sample to one of the two files
-  `data/share/maxdp53.txt` and `data/share/maxdb62.txt` for 53 and 62 maximum depth thresholds
-  respectively.
-
-
-## How to run
-
-
-- Create conda environment
+Go to folder [gatk_pixy]()
 
 ```
-mamba create -f env/gatk.yml
+folder="/your/folder"
+output_file="/yourfolder/ModernData.vcf.gz"
+
+vcf_files="${folder}/*.vcf.gz"
+
+# Use --merge to merge by position
+bcftools merge -v snps -m2 -M2 --merge all ${vcf_files} -o ${output_file} --force-samples
+
+vcftools --gzvcf ModernData.vcf.gz --plink --out ModernData
+```
+Here I also keept only biallelic sites.
+
+### Before plotting
+We also wanted to crosscheck the call overlap between the SNPChip and the WG sequencing.HO refers to Human Origins (the SNPCHip platform).
+Check the R code Comparison.R for more detail.
+
+
+Then I filter for HWE and the 2 MAF filters (0.01 and 0.05)
+```
+plink --bfile ModernData --hwe 1e-4  --make-bed --out ModernDataHWE --recode
+plink --bfile ModernDataHWE --maf 0.01  --make-bed --out ModernDataHWEmaf01 --recode
+plink --bfile ModernDataHWE --maf 0.05  --make-bed --out ModernDataHWEmaf05 --recode
 ```
 
-- Optionally create other conda environments used in the pipeline
+Then we filtered to have the same individuals on the SNPChip and WholeGenome(WG) datasets. Before computing PCA, we need to prune to remove linked SNPs. The parameters are different for each dataset:
+- --indep-pairwise 50 5 0.4 for WG data
+- --indep-pairwise 200 50 0.4 for SNPChip data
+  
+Pruning is performed like this with any of the parameters before pca:
 
 ```
-source activate gatk
-snakemake --use-conda --conda-create-envs-only
+plink --file yourfile --indep-pairwise 200 25 0.4 --out x.tmp
+plink --file yourfile --extract x.tmp.prune.in --make-bed --out yourfile.pruned
+plink --file yourfile.pruned --pca --out PCA
 ```
 
-- Update the sample list in `data/share/samples.txt` to include all the samples to be processed
-- Update the populations file `data/share/populations.txt`
-- Create `log` directory with `mkdir -p log`
-- Run pipeline. If you are running it on a cluster with SLURM, you can use the provided `run.slurm`
-  script. Most likely, you would need to use a slurm
-  [profile](https://snakemake.readthedocs.io/en/stable/executing/cli.html#profiles). If your global
-  profile is named "slurm", you can schedule the pipeline as
+## ROH 
+I calculated ROH with bcftools using the script [run_roh.sh](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/run_roh.sh) and processed it using the code [Roh.R](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/Roh.R).
 
-```
-sbatch ./run.slurm --profile slurm
-```
 
-The output files will be in `data/pi` directory. In particular, the nucleotide diversity estimates
-for the fully filtered input data will be in `data/pi/filtered.txt`.
+## Count variant sites and singletons
+With the script [SNPcounts.sh](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/SNPcounts.sh) 
 
+
+## Comparison of variants with 1KGP
+You can use the script [VariantComparison.sh](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/VariantComparison.sh) 
+
+## Imputation
+Just using standar Beagle scripts and 1KGP as reference panel.
+
+## Code for Figures: 
+- [Figure 1](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/CodeFig1.r)
+- [Figure S1](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/CodeFigS1.r)
+- [Figure S2](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/FigS2.r)
+ 

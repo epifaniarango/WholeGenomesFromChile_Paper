@@ -1,0 +1,12 @@
+name: gatk
+channels:
+   - conda-forge
+   - bioconda
+dependencies:
+   - bcftools=1.21
+   - bwa=0.7.18
+   - gatk4=4.1.8.1
+   - python=3.12
+   - samtools=1.21
+   - snakemake>=8.0
+   - snakemake-executor-plugin-slurm>=0.11

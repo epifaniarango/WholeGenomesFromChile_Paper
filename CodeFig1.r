@@ -10,15 +10,11 @@ unique_info <- distinct(info, Population, .keep_all = TRUE)
 library(dplyr)
 require(maps)
 require(viridis)
-
 library(rworldmap)
 library(mapproj)
-
 library(tidyverse)
 library(dplyr)
-
 library(ggrepel)
-
 library(ggthemes)
 
 
@@ -90,10 +86,10 @@ gg_map_labeled <- gg +
     data = info_f,
     aes(x = Longitude, y = Latitude, label = Label, colour = Population),
     size          = 3,
-    fill          = "white",      # box background
-    alpha         = 0.85,         # slightly transparent
-    label.size    = 0.2,          # border thickness of the box
-    label.r       = unit(0.15,"lines"),  # rounded corners
+    fill          = "white",    
+    alpha         = 0.85,         
+    label.size    = 0.2,          
+    label.r       = unit(0.15,"lines"),  
     box.padding   = 0.4,
     point.padding = 0.3,
     max.overlaps  = Inf,
@@ -118,15 +114,13 @@ gg_map_labeled
 
 
 
-
-
-
-###########
+###########SNP counts
 
 
 pop_order <- c("Yoruba","French","Han","Quechua",
                "Karitiana","Surui","Huilliche-Chiloe","Lafkenche","Pehuenche")
 
+#this comes from SNPcounts.sh but I might have made and extra processing step that I don't rembeber anymore
 df=read.csv("SNPcounts.csv")
 df <- df %>% mutate(FID = factor(FID, levels = pop_order))
 
@@ -146,7 +140,6 @@ pop_colors <- c(
 )
 
 
-# ---- 4) Sample sizes for annotation ----
 nlab <- df %>% distinct(FID, IID) %>% count(FID) %>%
   mutate(lbl = paste0("n=", n))
 
@@ -160,8 +153,6 @@ df_plot <- df %>%
     Value = ifelse(Metric == "Variants", Count/1e6, Count/1e3)
   )
 
-#df_plot <- df_plot %>%
- # filter(!IID %in% c("HGDP00783", "CHL-H16", "TEMP-P13", "TEM-L09"))
 
 my_order <- c( "Variants (millions)","Singletons (thousands)","Doubletons (thousands)")
 
@@ -203,8 +194,8 @@ p <- ggplot(df_plot, aes(FID, Value, color = FID)) +
     panel.spacing = unit(0.7, "lines")
   )
 p
-#ggsave("per_individual_counts_units_fixed.png", p, width = 10, height = 4.5, dpi = 300)
-#ggsave("per_individual_counts_units_fixed.pdf", p, width = 10, height = 4.5, dpi = 300)
+ggsave("per_individual_counts_units_fixed.png", p, width = 10, height = 4.5, dpi = 300)
+ggsave("per_individual_counts_units_fixed.pdf", p, width = 10, height = 4.5, dpi = 300)
 p
 
 
@@ -305,7 +296,7 @@ library(gridExtra)
 
 pcas=ggarrange(b,aa, nrow=1, common.legend = TRUE, legend="right", labels=c("C","D"))
 pcas
-#6X8 inch landspace
+
 
 
 
@@ -412,25 +403,8 @@ library(ggpubr)
 library(gridExtra)  
 
 
-row1 <- ggarrange(
-  gg_map_labeled, p,          # whatever you called them
-  ncol   = 2,
-  widths = c(1.1, 2)  , labels=c("A","B")       # keep B a bit wider, but A not too small
-)
-row1
-# Row 2: C + D (PCAs)
-row2 <- pcas
-Figure1ab <- ggarrange(
-  row1,
-  row2,
-  nrow = 2,
-  heights = c(1.2, 1),   # equal heights for top two rows
-  align = "v"
-)
 
 
-Figure1ab
-#saved as pdf 10x15 , landscape
 
 roh_E <- roh +
   #labs(tag = "E", x = NULL) +          # remove x-axis title
@@ -450,26 +424,7 @@ roh_E <- roh +
   )
 
 
-roh_E
-roh_E <- roh_E + 
-  theme(
-    strip.text = element_text(
-      face = "bold",
-      size = 14,
-      margin = margin(t = 10, b = 3)   # add top margin
-    )
-  )
-roh_E <- roh_E +
-  theme(
-    plot.margin = margin(t = 12, r = 5, b = 5, l = 5)
-  )
 
-
-roh_E <- roh_E +
-  scale_y_continuous(
-    limits = c(0, NA),                 # only fix lower bound
-    expand = expansion(mult = c(0.05, 0.1))
-  )
 
 ##############################
 gg_map_labeled <- gg_map_labeled + coord_fixed(1)
@@ -501,7 +456,7 @@ Figure1
 ggsave(
   "Figure1.pdf",
   Figure1,
-  width  = 8.5,   # portrait
+  width  = 8.5,   
   height = 11,
   units  = "in"
 )

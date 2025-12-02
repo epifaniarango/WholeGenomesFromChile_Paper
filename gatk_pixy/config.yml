@@ -1,0 +1,86 @@
+ref:
+  suffix_len: 1
+  chr_n: 22
+gatk:
+  GenomicsDB:
+    mem_reserve: 6000
+    mem_reserve_read: 8000
+    batch_size: 40
+    verbosity: DEBUG
+    extra_java_options: "-DGATK_STACKTRACE_ON_USER_EXCEPTION=true"
+  VQSR:
+    SNP:
+      mem_mb: 12000
+      mem_reserve: 500
+      max_gaussians: 6
+      truth_sensitivity_filter: 99.8
+      annotations:
+        - QD
+        - MQRankSum
+        - ReadPosRankSum
+        - FS
+        - MQ
+        - SOR
+        - DP
+      tranches:
+        - 100.0
+        - 99.8
+        - 99.5
+        - 99.0
+        - 95.0
+      resources:
+        - label: hapmap
+          file: hapmap_3.3.b37.vcf.gz
+          known: false
+          training: true
+          truth: true
+          prior: 15
+        - label: omni
+          file: 1000G_omni2.5.b37.vcf.gz
+          known: false
+          training: true
+          truth: true
+          prior: 12
+        - label: 1000G
+          file: 1000G_phase1.snps.high_confidence.b37.vcf.gz
+          known: false
+          training: true
+          truth: false
+          prior: 10
+        - label: dbsnp
+          file: dbsnp_138.b37.vcf.gz
+          known: true
+          training: false
+          truth: false
+          prior: 7
+    INDEL:
+      mem_mb: 16000
+      mem_reserve: 200
+      max_gaussians: 4
+      truth_sensitivity_filter: 99.0
+      annotations:
+        - FS
+        - ReadPosRankSum
+        - MQRankSum
+        - QD
+        - SOR
+        - DP
+      tranches:
+        - 100.0
+        - 99.8
+        - 99.5
+        - 99.0
+        - 95.0
+      resources:
+        - label: mills
+          file: Mills_and_1000G_gold_standard.indels.b37.vcf.gz
+          known: false
+          training: true
+          truth: true
+          prior: 12
+        - label: dbsnp
+          file: dbsnp_138.b37.vcf.gz
+          known: true
+          training: false
+          truth: false
+          prior: 2

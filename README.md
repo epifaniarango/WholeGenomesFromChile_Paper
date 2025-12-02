@@ -41,9 +41,16 @@ plink --file yourfile --extract x.tmp.prune.in --make-bed --out yourfile.pruned
 plink --file yourfile.pruned --pca --out PCA
 ```
 
-
-
-
-
 ## Fig. S1
 For Figure 1, I installed KING with conda and it was pretty straighforward. Use CodeFigS1.r to make the plot. 
+
+
+## 2.ROH and other stats
+- I calculated ROH with bcftools using the script run_roh.sh and processed it using the code Roh.R. Apart from a few plots, there is the code to plot Figure 2A.
+- To calculate frequencies, I used the flags—-freq and—-het for the F distribution with plink. Check the R script to plot Figure S2. 
+- Code for plotting site frequency spectrum on FigureS3 code.
+- I calculated Fst with this code (https://github.com/epifaniarango/Fst_forLargeDatasets), and to plot heatmap and regression, you can check R code S4. 
+
+
+
+

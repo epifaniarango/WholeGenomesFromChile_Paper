@@ -7,17 +7,12 @@ This repository contains scripts related to the analysis conducted for the publi
 
 Due to the sensitive nature of the study, the raw data is not publicly available. However, it can be accessed by requesting access through this repository. The data have been deposited in XXX with accession number XXX.
 
-## Overview
-
-This repository hosts the scripts used for data analysis and visualization presented in the aforementioned publication. The scripts are organized into different folders based on their functionality and relevance to the study.
-
-
 ## Branches
 
 You can navigate different content by switching branches. Each branch may represent a different aspect of the analysis or provide access to various versions of the scripts used in the study.
 The data alignment was perfomed using this [pipeline](https://github.com/YourePrettyGood/fastq_to_gvcf_nextflow). The joint genotyping and calling with this [one](https://github.com/YourePrettyGood/gvcf_to_annotated_vcf_nextflow) and the data filter using this other [one](https://github.com/YourePrettyGood/PIBv1_manuscript).
 
-- Figure 1 and related Figure (KING, PCA, mismatch count between array and WG, ROH) (https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated)
+- Figure 1 and related Figures (KING, PCA, mismatch count between array and WG, ROH, variant count, etc) is [here](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/tree/Figure1andRelated)
 
 
 

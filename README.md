@@ -2,7 +2,7 @@
 
 ## Pi and Tajima's D calculation
 
-Go to folder [gatk_pixy]()
+Go to folder [gatk_pixy](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/tree/Figure2andRelated/gatk_pixy)
 
 ```
 folder="/your/folder"

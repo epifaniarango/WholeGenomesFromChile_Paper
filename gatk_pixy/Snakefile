@@ -1,0 +1,488 @@
+configfile: "config.yml"
+
+import os.path as osp
+import re
+
+with open("data/share/samples.txt", "r") as f:
+	samples = [x.rstrip() for x in f]
+
+cfg_ref = config["ref"]
+chr_n = cfg_ref["chr_n"]
+ptrn = "{{0:0{suffix_len}}}".format(**cfg_ref)
+chr_names = [ptrn.format(x+1) for x in range(chr_n)]
+cfg_vqsr = config["gatk"]["VQSR"]
+pixy_input = {
+		#		"raw": "data/gatk/variants.vcf.gz",
+		"filtpass": "data/gatk/variants/filtpass/{sequence}.vcf.gz",
+		"filtgt": "data/gatk/variants/filtgt/{sequence}.vcf.gz",
+		"filthwe": "data/gatk/variants/filthwe/{sequence}.vcf.gz",
+		"filtered": "data/gatk/variants/filtered/{sequence}.vcf.gz",
+		"maf0.01": "data/gatk/variants/maf/0.01/{sequence}.vcf.gz",
+		"maf0.05": "data/gatk/variants/maf/0.05/{sequence}.vcf.gz",
+		"af0.01": "data/gatk/variants/af/0.01/{sequence}.vcf.gz",
+	}
+
+
+rule all:
+	input:
+		expand(
+			"data/pixy/{variants}/{sequence}_pi.txt",
+			variants=["filtpass", "filtgt", "filthwe", "filtered", "maf0.01", "maf0.05", "af0.01"],
+			sequence=chr_names
+		),
+		expand(
+			"data/pi/{variants}.txt",
+			variants=["filtpass", "filtgt", "filthwe", "filtered", "maf0.01", "maf0.05", "af0.01"]
+		)
+
+
+rule indexRef:
+	input:
+		"data/ref/hs37d5.fa.gz"
+	output:
+		expand("data/ref/hs37d5.fa.gz.{ext}", ext=["fai", "gzi"])
+	resources:
+		cpus_per_task = 2,
+		mem_mb = 2000,
+		runtime = "15m"
+	shell:
+		"""
+		samtools faidx {input}
+		"""
+
+
+# The files are not block compressed but VariantRecalibration requires block compression
+rule gatkDownloadVqsrResources:
+	output:
+		vcf = "data/gatk/vqsr/resources/{vqsr_resource_fn}",
+		tbi = "data/gatk/vqsr/resources/{vqsr_resource_fn}.tbi"
+	threads: 2
+	resources:
+		cpus_per_task = 2,
+		mem_mb = 1000,
+		runtime = "30m"
+	shell:
+		"""
+		url="https://storage.googleapis.com/gatk-legacy-bundles/b37"
+		curl -L $url/{wildcards.vqsr_resource_fn} | gunzip -c | bgzip -o {output.vcf}
+		tabix {output.vcf}
+		"""
+
+
+rule gatkIndexRef:
+	input:
+		fa = "data/ref/hs37d5.fa.gz"
+	output:
+		dct = "data/ref/hs37d5.dict"
+	resources:
+		cpus_per_task = 2,
+		mem_mb = 3800,
+		runtime = "20m"
+	shell:
+		"""
+		gatk CreateSequenceDictionary -R {input.fa} -O {output.dct}
+		"""
+
+
+# HaplotypeCaller cannot use more than 1 thread and does not typically need a lot of memory
+rule gatkCallHaplotypes:
+	input:
+		ref = "data/ref/hs37d5.fa.gz",
+		idx = "data/ref/hs37d5.fa.gz.fai",
+		dct = "data/ref/hs37d5.dict",
+		bam = "data/bams/{sample}_MD_IR_recal_filtered.bam",
+		bai = "data/bams/{sample}_MD_IR_recal_filtered.bam.bai"
+	output:
+		gvcf = "data/gatk/gvcf/{sequence}/{sample}.g.vcf.gz",
+		idx = "data/gatk/gvcf/{sequence}/{sample}.g.vcf.gz.tbi"
+	resources:
+		cpus_per_task = 2,
+		mem_mb = 3850,
+		runtime = "12h"
+	shell:
+		"""
+		gatk --java-options '-Xmx{resources.mem_mb}m' HaplotypeCaller \
+			-R {input.ref} \
+			-I {input.bam} \
+			-O {output.gvcf} \
+			-L {wildcards.sequence} \
+			-ERC GVCF
+		"""
+
+
+# The output directory must not exist, so we might as well mark it `temp`
+rule gatkCombineGvcfs:
+	input:
+		expand("data/gatk/gvcf/{{sequence}}/{sample}.g.vcf.{ext}", sample=samples, ext=["gz", "gz.tbi"]),
+		ref = "data/ref/hs37d5.fa.gz",
+		ref_idx = "data/ref/hs37d5.fa.gz.fai",
+		ref_dict = "data/ref/hs37d5.dict"
+	output:
+		temp(directory("data/gatk/genomicsdb/{sequence}"))
+	threads: 2
+	resources:
+		cpus_per_task = 2,
+		mem_mb = 12000,
+		runtime = "42h"
+	run:
+		cfg = config["gatk"]["GenomicsDB"]
+		java_mem = resources.mem_mb - int(cfg["mem_reserve"])
+		extra_java_options = cfg["extra_java_options"]
+		cmd = " ".join([
+				"gatk",
+				"--java-options", "'-Xmx{}m {}'".format(java_mem, extra_java_options),
+				"GenomicsDBImport",
+				"--genomicsdb-workspace-path", output[0],
+				"--genomicsdb-shared-posixfs-optimizations",
+				"--batch-size", str(cfg["batch_size"]),
+				"--verbosity", cfg["verbosity"],
+				"-L", wildcards.sequence,
+			] +
+			[" ".join(["-V", x]) for x in input if x.endswith("g.vcf.gz")])
+		shell(cmd)
+
+
+# Shallow shadowing is to make sure that the tmp directory is deleted afterwards
+rule gatkJointGenotype:
+	input:
+		ref = "data/ref/hs37d5.fa.gz",
+		ref_idx = "data/ref/hs37d5.fa.gz.fai",
+		ref_dict = "data/ref/hs37d5.dict",
+		gendb = "data/gatk/genomicsdb/{sequence}"
+	output:
+		vcf = temp("data/gatk/variants/{sequence}/raw.vcf.gz"),
+		tbi = temp("data/gatk/variants/{sequence}/raw.vcf.gz.tbi")
+	shadow:
+		"shallow"
+	threads: 2
+	resources:
+		cpus_per_task = 2,
+		mem_mb = 24000,
+		runtime = "48h"
+	run:
+		cfg = config["gatk"]["GenomicsDB"]
+		java_mem = resources.mem_mb - int(cfg["mem_reserve_read"])
+		cmd = " ".join([
+				"gatk",
+				"--java-options", "'-Xmx{}m'".format(java_mem),
+				"GenotypeGVCFs",
+				"-R", input.ref,
+				"-V", "gendb://{}".format(input.gendb),
+				"-O", output.vcf,
+				"-L", wildcards.sequence,
+				"--tmp-dir", ".",
+				"-all-sites",
+			])
+		shell(cmd)
+
+
+rule gatkGatherVcf:
+	input:
+		expand("data/gatk/variants/{sequence}/raw.vcf.gz{ext}", sequence=chr_names, ext=["", ".tbi"])
+	output:
+		vcf = "data/gatk/variants.vcf.gz",
+		tbi = "data/gatk/variants.vcf.gz.tbi"
+	threads: 2
+	resources:
+		cpus_per_task = 2,
+		mem_mb = 3800,
+		runtime = "12h"
+	run:
+		vcfs = [" ".join(["-I", x]) for x in input if x.endswith(".gz")]
+		cmd = " ".join([
+				"gatk",
+				"--java-options", "'-Xmx{}m'".format(resources.mem_mb),
+				"GatherVcfs",
+				"-O", output.vcf
+			] + vcfs)
+		shell(cmd)
+		shell(" ".join(["gatk", "IndexFeatureFile", "-I", output.vcf]))
+
+
+rule gatkMakeSitesOnly:
+	input:
+		vcf = "data/gatk/variants.vcf.gz",
+		tbi = "data/gatk/variants.vcf.gz.tbi"
+	output:
+		temp("data/gatk/vqsr/sitesonly.vcf.gz")
+	threads: 2
+	resources:
+		cpus_per_task = 2,
+		mem_mb = 2000,
+		runtime = "12h"
+	shell:
+		"""
+		gatk MakeSitesOnlyVcf -I {input.vcf} -O {output}
+		"""
+
+
+rule gatkVariantRecalibrator:
+	input:
+		lambda wc: ["data/gatk/vqsr/resources/" + x["file"] for x in cfg_vqsr[wc.mode]["resources"]],
+		lambda wc: ["data/gatk/vqsr/resources/" + x["file"] + ".tbi" for x in cfg_vqsr[wc.mode]["resources"]],
+		snps = "data/gatk/vqsr/sitesonly.vcf.gz"
+	output:
+		recal = "data/gatk/vqsr/{mode}.recal",
+		tranches = "data/gatk/vqsr/{mode}.tranches"
+	threads: 2
+	resources:
+		cpus_per_task = 2,
+		mem_mb = lambda wc: cfg_vqsr[wc.mode]["mem_mb"],
+		runtime = "6h"
+	run:
+		cfg_mode = cfg_vqsr[wildcards.mode]
+		java_mem = resources.mem_mb - cfg_mode["mem_reserve"]
+		cmd = " ".join([
+				"gatk",
+				"--java-options", "'-Xmx{}m'".format(java_mem),
+				"VariantRecalibrator",
+				"-V", input.snps,
+				"--trust-all-polymorphic",
+				"-mode", wildcards.mode,
+				"--max-gaussians", str(cfg_mode["max_gaussians"]),
+				"-O", output.recal,
+				"--tranches-file", output.tranches,
+			] +
+			["-an {}".format(x) for x in cfg_mode["annotations"]] +
+			["-tranche {}".format(x) for x in cfg_mode["tranches"]] +
+			[
+				"-resource:{label},".format(**x) +
+					"known={known},training={training},truth={truth},prior={prior} ".format(**x).lower() +
+					"data/gatk/vqsr/resources/{file}".format(**x)
+				for x in cfg_mode["resources"]
+			])
+		shell(cmd)
+
+
+rule gatkApplyVqsrIndels:
+	input:
+		variants = "data/gatk/variants.vcf.gz",
+		recal = "data/gatk/vqsr/INDEL.recal",
+		tranches = "data/gatk/vqsr/INDEL.tranches"
+	output:
+		vcf = temp("data/gatk/vqsr/indel_recal_{sequence}.vcf.gz"),
+		tbi = temp("data/gatk/vqsr/indel_recal_{sequence}.vcf.gz.tbi")
+	threads: 2
+	resources:
+		cpus_per_task = 2,
+		mem_mb = 4000,
+		runtime = "2h"
+	run:
+		cfg_mode = cfg_vqsr["INDEL"]
+		java_mem = resources.mem_mb - cfg_mode["mem_reserve"]
+		cmd = " ".join([
+				"gatk",
+				"--java-options", "'-Xmx{}m'".format(java_mem),
+				"ApplyVQSR",
+				"-V", input.variants,
+				"--recal-file", input.recal,
+				"--tranches-file", input.tranches,
+				"--truth-sensitivity-filter-level", str(cfg_mode["truth_sensitivity_filter"]),
+				"--create-output-variant-index", "true",
+				"-mode", "INDEL",
+				"-L", wildcards.sequence,
+				"-O", output.vcf
+			])
+		shell(cmd)
+
+
+rule gatkApplyVqsrSnps:
+	input:
+		variants = "data/gatk/vqsr/indel_recal_{sequence}.vcf.gz",
+		tbi = "data/gatk/vqsr/indel_recal_{sequence}.vcf.gz.tbi",
+		recal = "data/gatk/vqsr/SNP.recal",
+		tranches = "data/gatk/vqsr/SNP.tranches"
+	output:
+		vcf = "data/gatk/variants/recal/{sequence}.vcf.gz",
+		tbi = "data/gatk/variants/recal/{sequence}.vcf.gz.tbi",
+	threads: 2
+	resources:
+		cpus_per_task = 2,
+		mem_mb = 8000,
+		runtime = "4h"
+	run:
+		cfg_mode = cfg_vqsr["SNP"]
+		java_mem = resources.mem_mb - cfg_mode["mem_reserve"]
+		cmd = " ".join([
+				"gatk",
+				"--java-options", "'-Xmx{}m'".format(java_mem),
+				"ApplyVQSR",
+				"-V", input.variants,
+				"--recal-file", input.recal,
+				"--tranches-file", input.tranches,
+				"--truth-sensitivity-filter-level", str(cfg_mode["truth_sensitivity_filter"]),
+				"--create-output-variant-index", "true",
+				"-mode", "SNP",
+				"-L", wildcards.sequence,
+				"-O", output.vcf
+			])
+		shell(cmd)
+
+
+# Replace . with PASS
+# You could theoretically do '-m+ -e 'FILTER="."' -s PASS' but we do not need sites without coverage
+# anyway
+rule filterPass:
+	input:
+		vcf = "data/gatk/variants/recal/{sequence}.vcf.gz",
+		tbi = "data/gatk/variants/recal/{sequence}.vcf.gz.tbi"
+	output:
+		vcf = temp("data/gatk/variants/filtpass/{sequence}.vcf.gz"),
+		tbi = temp("data/gatk/variants/filtpass/{sequence}.vcf.gz.tbi")
+	threads: 3
+	resources:
+		cpus_per_task = 3,
+		mem_mb = 4000,
+		runtime = "2h"
+	shell:
+		"""
+		bcftools filter -m+ -i 'INFO/DP>0' -s coverage --threads {threads} -Wtbi \
+			-o {output.vcf} {input.vcf}
+		"""
+
+
+rule filterGTDepth:
+	input:
+		vcf = "data/gatk/variants/filtpass/{sequence}.vcf.gz",
+		tbi = "data/gatk/variants/filtpass/{sequence}.vcf.gz.tbi",
+		f53 = "data/share/maxdp53.txt",
+		f62 = "data/share/maxdp62.txt"
+	output:
+		vcf = temp("data/gatk/variants/filtgt/{sequence}.vcf.gz"),
+		tbi = temp("data/gatk/variants/filtgt/{sequence}.vcf.gz.tbi")
+	threads: 3
+	resources:
+		cpus_per_task = 3,
+		mem_mb = 4000,
+		runtime = "4h"
+	shell:
+		"""
+		bcftools plugin setGT --threads {threads} -Wtbi -o {output.vcf} {input.vcf} -- -t q -n . \
+			-i 'FMT/DP[*]<10|FMT/GQ[*]<30|FMT/DP[@{input.f53}]>53|FMT/DP[@{input.f62}]>62'
+		"""
+
+
+# the second bcftools cannot use more than 250% CPU, so we can get away with `--threads {threads}`
+rule filterHWE:
+	input:
+		vcf = "data/gatk/variants/filtgt/{sequence}.vcf.gz",
+		tbi = "data/gatk/variants/filtgt/{sequence}.vcf.gz.tbi"
+	output:
+		vcf = temp("data/gatk/variants/filthwe/{sequence}.vcf.gz"),
+		tbi = temp("data/gatk/variants/filthwe/{sequence}.vcf.gz.tbi")
+	threads: 4
+	resources:
+		cpus_per_task = 4,
+		mem_mb = 4000,
+		runtime = "4h"
+	shell:
+		"""
+		bcftools plugin fill-tags -O v {input.vcf} -- -t HWE \
+			| bcftools filter -m+ -s HWE0.0001 -i "TYPE='ref' || INFO/HWE>0.0001" \
+				--threads {threads} -Wtbi -o {output.vcf} -
+		"""
+
+
+rule filterMiss:
+	input:
+		vcf = "data/gatk/variants/filthwe/{sequence}.vcf.gz",
+		tbi = "data/gatk/variants/filthwe/{sequence}.vcf.gz.tbi"
+	output:
+		vcf = "data/gatk/variants/filtered/{sequence}.vcf.gz",
+		tbi = "data/gatk/variants/filtered/{sequence}.vcf.gz.tbi"
+	threads: 3
+	resources:
+		cpus_per_task = 3,
+		mem_mb = 4000,
+		runtime = "4h"
+	shell:
+		"""
+		bcftools filter -m+ -s Missingness0.05 -i 'F_MISSING<=0.05' \
+			--threads {threads} -Wtbi -o {output.vcf} {input.vcf}
+		"""
+
+
+rule filterMAF:
+	input:
+		vcf = "data/gatk/variants/filtered/{sequence}.vcf.gz",
+		tbi = "data/gatk/variants/filtered/{sequence}.vcf.gz.tbi"
+	output:
+		vcf = "data/gatk/variants/maf/{maf_thres}/{sequence}.vcf.gz",
+		tbi = "data/gatk/variants/maf/{maf_thres}/{sequence}.vcf.gz.tbi"
+	threads: 3
+	resources:
+		cpus_per_task = 3,
+		mem_mb = 3700,
+		runtime = "4h"
+	shell:
+		"""
+		bcftools filter -m+ -s MAF{wildcards.maf_thres} \
+			-i "TYPE='ref' || INFO/MAF>={wildcards.maf_thres}" \
+			--threads {threads} -Wtbi -o {output.vcf} {input.vcf}
+		"""
+
+
+rule filterAF:
+	input:
+		vcf = "data/gatk/variants/filtered/{sequence}.vcf.gz",
+		tbi = "data/gatk/variants/filtered/{sequence}.vcf.gz.tbi"
+	output:
+		vcf = "data/gatk/variants/af/{af_thres}/{sequence}.vcf.gz",
+		tbi = "data/gatk/variants/af/{af_thres}/{sequence}.vcf.gz.tbi"
+	threads: 3
+	resources:
+		cpus_per_task = 3,
+		mem_mb = 3700,
+		runtime = "4h"
+	shell:
+		"""
+		bcftools filter -m+ -s AF{wildcards.af_thres} \
+			-i "TYPE='ref' || INFO/AF>={wildcards.af_thres}" \
+			--threads {threads} -Wtbi -o {output.vcf} {input.vcf}
+		"""
+
+
+rule pixy:
+	input:
+		vcf = lambda wc: pixy_input[wc.variants],
+		tbi = lambda wc: pixy_input[wc.variants] + ".tbi",
+		pops = "data/share/populations.txt"
+	output:
+		"data/pixy/{variants}/{sequence}_pi.txt"
+	shadow: "shallow"
+	conda: "env/pixy.yml"
+	threads: 16
+	resources:
+		cpus_per_task = 16,
+		mem_mb = 7700,
+		runtime = "2h"
+	shell:
+		"""
+		# pixy requires hard filtering
+		hf="hf.vcf.gz"
+		bcftools view -f PASS --threads {threads} -Wtbi -o $hf {input.vcf}
+		out=$(dirname {output})
+		pixy --stats pi \
+			--vcf $hf \
+			--populations {input.pops} \
+			--window_size 10000 \
+			--chromosomes {wildcards.sequence} \
+			--n_cores {threads} \
+			--output_folder $out \
+			--output_prefix {wildcards.sequence}
+		"""
+
+
+rule pi:
+	input:
+		expand("data/pixy/{{variants}}/{sequence}_pi.txt", sequence=chr_names)
+	output:
+		"data/pi/{variants}.txt"
+	threads: 1
+	resources:
+		cpus_per_task = 1,
+		mem_mb = 3700,
+		runtime = "1h"
+	script:
+		"scripts/pi.py"
+

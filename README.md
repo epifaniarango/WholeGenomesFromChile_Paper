@@ -42,7 +42,7 @@ plink --file yourfile.pruned --pca --out PCA
 ```
 
 ## ROH 
-- I calculated ROH with bcftools using the script [run_roh.sh](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/run_roh.sh) and processed it using the code [Roh.R](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/Roh.R).
+I calculated ROH with bcftools using the script [run_roh.sh](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/run_roh.sh) and processed it using the code [Roh.R](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/Roh.R).
 
 
 ## Count variant sites and singletons

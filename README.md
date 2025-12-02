@@ -42,7 +42,7 @@ plink --file yourfile.pruned --pca --out PCA
 ```
 
 ## Fig. S1
-For Figure 1, I installed KING with conda and it was pretty straighforward. Use CodeFigS1.r to make the plot. 
+For Figure 1, I installed KING with conda and it was pretty straighforward. Use [CodeFigS1.r](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/CodeFigS1.r) to make the plot. 
 
 
 ## 2.ROH and other stats

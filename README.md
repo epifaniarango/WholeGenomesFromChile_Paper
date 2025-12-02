@@ -52,8 +52,12 @@ For Figure 1, I installed KING with conda and it was pretty straighforward. Use 
 ## Count variant sites and singletons
 With the script [SNPcounts.sh](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/SNPcounts.sh) 
 
-## Code for Figure 1: 
-I am quite proud of this [plot](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/CodeFig1.r) 
 
 ## Comparison of variants with 1KGP
 You can use the script [VariantComparison.sh](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/VariantComparison.sh) 
+
+## Code for Figures: 
+- [Figure 1](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/CodeFig1.r)
+- [Figure S1](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/CodeFigS1.r)
+- [Figure S2](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/FigS2.r)
+ 

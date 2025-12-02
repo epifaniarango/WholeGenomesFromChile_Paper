@@ -41,10 +41,6 @@ plink --file yourfile --extract x.tmp.prune.in --make-bed --out yourfile.pruned
 plink --file yourfile.pruned --pca --out PCA
 ```
 
-## Fig. S1
-For Figure 1, I installed KING with conda and it was pretty straighforward. Use [CodeFigS1.r](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/CodeFigS1.r) to make the plot. 
-
-
 ## ROH 
 - I calculated ROH with bcftools using the script [run_roh.sh](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/run_roh.sh) and processed it using the code [Roh.R](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/Roh.R).
 
@@ -55,6 +51,9 @@ With the script [SNPcounts.sh](https://github.com/epifaniarango/WholeGenomesFrom
 
 ## Comparison of variants with 1KGP
 You can use the script [VariantComparison.sh](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/VariantComparison.sh) 
+
+## Imputation
+Just using standar Beagle scripts and 1KGP as reference panel.
 
 ## Code for Figures: 
 - [Figure 1](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/CodeFig1.r)

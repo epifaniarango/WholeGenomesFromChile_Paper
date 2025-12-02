@@ -49,8 +49,11 @@ For Figure 1, I installed KING with conda and it was pretty straighforward. Use 
 - I calculated ROH with bcftools using the script [run_roh.sh](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/run_roh.sh) and processed it using the code [Roh.R](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/Roh.R).
 
 
-## Code for Figure 1: 
+## Count variant sites and singletons
+With the script [SNPcounts.sh](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/SNPcounts.sh) 
 
+## Code for Figure 1: 
+I am quite proud of this [plot](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/CodeFig1.r) 
 
 
 

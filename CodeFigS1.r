@@ -2,8 +2,6 @@ setwd("/Users/ragsdalelab/Documents/PhD/KING/")
 library(tidyverse)
 kin=read.table("king.kin0", header = T)
 
-kin <- kin %>%
-  filter(!ID1 %in% "TEM-P19", !ID2 %in% "TEM-P19")
 
 
 # Relationship classification (KING thresholds)

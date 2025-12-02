@@ -17,7 +17,7 @@ This repository hosts the scripts used for data analysis and visualization prese
 You can navigate different content by switching branches. Each branch may represent a different aspect of the analysis or provide access to various versions of the scripts used in the study.
 The data alignment was perfomed using this [pipeline](https://github.com/YourePrettyGood/fastq_to_gvcf_nextflow). The joint genotyping and calling with this [one](https://github.com/YourePrettyGood/gvcf_to_annotated_vcf_nextflow) and the data filter using this other [one](https://github.com/YourePrettyGood/PIBv1_manuscript).
 
-- IBD (identity by descent)analysis (https://github.com/epifaniarango/popgen_with_epi/tree/IBD)
+- Figure 1 and related Figure (KING, PCA, mismatch count between array and WG, ROH) (https://github.com/epifaniarango/popgen_with_epi/tree/IBD)
 - ALDER for dating admixture times (https://github.com/epifaniarango/popgen_with_epi/tree/ALDER)
 - Masking ancestries in admixed populations (https://github.com/epifaniarango/popgen_with_epi/tree/Local-ancestry-and-masking)
 - Dstats plots (https://github.com/epifaniarango/popgen_with_epi/tree/Dstats-plots)
@@ -26,3 +26,4 @@ The data alignment was perfomed using this [pipeline](https://github.com/YourePr
 ## Contact Information
 
 For any questions or further information, please contact epifaniarango@gmail.com .
+ 

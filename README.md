@@ -45,8 +45,16 @@ plink --file yourfile.pruned --pca --out PCA
 For Figure 1, I installed KING with conda and it was pretty straighforward. Use [CodeFigS1.r](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/CodeFigS1.r) to make the plot. 
 
 
-## ROH and other stats
-- I calculated ROH with bcftools using the script [run_roh.sh](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/run_roh.sh) and processed it using the code [Roh.R](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/Roh.R). 
+## ROH 
+- I calculated ROH with bcftools using the script [run_roh.sh](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/run_roh.sh) and processed it using the code [Roh.R](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/blob/Figure1andRelated/Roh.R).
+
+
+## Code for Figure 1: 
+
+
+
+
+
 - To calculate frequencies, I used the flags—-freq and—-het for the F distribution with plink. Check the R script to plot Figure S3. 
 - Code for plotting site frequency spectrum on FigureS4 code.
 - I calculated Fst with this [code](https://github.com/epifaniarango/Fst_forLargeDatasets), and to plot heatmap and regression, you can check XXX. 

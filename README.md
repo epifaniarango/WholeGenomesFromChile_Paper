@@ -4,7 +4,7 @@
 
 Go to folder [gatk_pixy](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/tree/Figure2andRelated/gatk_pixy).
 
-##Fst
+## Fst
 I calculate Fst with this [script](https://github.com/epifaniarango/Fst_forLargeDatasets).
 
 ## Code for Figures: 

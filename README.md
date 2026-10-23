@@ -1,4 +1,4 @@
-<img width="468" height="13" alt="image" src="https://github.com/user-attachments/assets/467c0d0f-ea33-4bc8-b485-71c5a92848ca" /># Scripts for the Publication "Uncovering high levels of genomic diversity in the Southern Cone of South America"
+# Scripts for the Publication "Uncovering high levels of genomic diversity in the Southern Cone of South America"
 
 This repository contains scripts related to the analysis conducted for the publication "Uncovering high levels of genomic diversity in the Southern Cone of South America" in XXX. The publication can be accessed XXX
 

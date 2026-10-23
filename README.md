@@ -1,6 +1,6 @@
 # Scripts for the Publication "Uncovering high levels of genomic diversity in the Southern Cone of South America"
 
-This repository contains scripts related to the analysis conducted for the publication "Uncovering high levels of genomic diversity in the Southern Cone of South America" in XXX. The publication can be accessed XXX
+This repository contains scripts related to the analysis conducted for the publication "Uncovering high levels of genomic diversity in the Southern Cone of South America" in XXX. The publication can be accessed XXX. [![DOI](https://zenodo.org/badge/1108765117.svg)](https://doi.org/10.5281/zenodo.23597832)
 
 
 ## Data Availability

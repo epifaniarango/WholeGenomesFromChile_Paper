@@ -13,6 +13,8 @@ You can navigate different content by switching branches. Each branch may repres
 The data alignment was perfomed using this [pipeline](https://github.com/YourePrettyGood/fastq_to_gvcf_nextflow). The joint genotyping and calling with this [one](https://github.com/YourePrettyGood/gvcf_to_annotated_vcf_nextflow) and the data filter using this other [one](https://github.com/YourePrettyGood/PIBv1_manuscript).
 
 - Figure 1 and related Figures (KING, PCA, mismatch count between array and WG, ROH, variant count, etc) is [here](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/tree/Figure1andRelated)
+- Figure 2 and related Figures (Fst,Pi, Tajima'sD, etc) is [here](https://github.com/epifaniarango/WholeGenomesFromChile_Paper/tree/Figure2andRelated)
+
 
 
 

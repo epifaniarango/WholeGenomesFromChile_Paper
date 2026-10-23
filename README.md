@@ -5,7 +5,7 @@ This repository contains scripts related to the analysis conducted for the publi
 
 ## Data Availability
 
-Due to the sensitive nature of the study, the raw data is not publicly available. However, it can be accessed by requesting access through this repository. The data have been deposited in EGA with accession number EGAC50000001221.
+Due to the sensitive nature of the study, the raw data is not publicly available. However, it can be accessed by requesting access through this repository. The data have been deposited in EGA with accession number EGAD50000003202.
 
 ## Branches
 
